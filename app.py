@@ -345,7 +345,7 @@ if run_button:
             with st.status("Connecting to Angel One", expanded=True) as status:
                 smart = login()
                 st.write("鉁?Logged in")
-                status.update(label="Loading option contracts鈥?)
+                status.update(label="Loading option contracts")
                 expiry, cmap = load_option_map(index_name, expiry_option)
                 st.write(f"鉁?{cfg['label']} expiry ({expiry_option}): **{expiry}**")
 

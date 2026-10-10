@@ -342,7 +342,7 @@ if run_button:
     else:
         try:
             candle_start = datetime.combine(d_text, datetime.min.time()).replace(hour=_h, minute=_m)
-            with st.status("Connecting to Angel One鈥?, expanded=True) as status:
+            with st.status("Connecting to Angel One", expanded=True) as status:
                 smart = login()
                 st.write("鉁?Logged in")
                 status.update(label="Loading option contracts鈥?)

@@ -143,6 +143,58 @@ def load_option_map(index_name, expiry_selection):
     return expiry, cmap
 
 
+def _parse_candle_timestamp(value):
+    """Normalize the timestamp string returned by Angel to a datetime object."""
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        dt = value
+    elif isinstance(value, str):
+        s = value.strip()
+        if s.endswith("Z"):
+            s = s[:-1] + "+00:00"
+        try:
+            dt = datetime.fromisoformat(s)
+        except ValueError:
+            for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%d-%b-%Y %H:%M:%S"):
+                try:
+                    dt = datetime.strptime(s, fmt)
+                    break
+                except ValueError:
+                    dt = None
+            if dt is None:
+                return None
+    else:
+        try:
+            dt = datetime.fromisoformat(str(value))
+        except Exception:
+            return None
+
+    if dt.tzinfo is not None:
+        dt = dt.astimezone().replace(tzinfo=None)
+    return dt.replace(second=0, microsecond=0)
+
+
+def _extract_candle_row(data):
+    """Return a candle row from SmartAPI response regardless of row layout."""
+    if not data:
+        return None
+    if isinstance(data, dict):
+        # Some responses may come back as dict->list or nested dict
+        for key in ("candle", "data", "rows"):
+            if key in data and data[key]:
+                return _extract_candle_row(data[key])
+        return None
+    if isinstance(data, list):
+        for row in data:
+            if isinstance(row, (list, tuple)) and len(row) >= 6:
+                return row
+            if isinstance(row, dict):
+                if any(k in row for k in ("time", "datetime", "timestamp", "ts")):
+                    return row
+    return None
+
+
 def fetch_candle(smart, exch, token, candle_start, session_open=(9, 15)):
     """Return dict of the 5-min candle starting at candle_start, else None."""
     frm = max(candle_start - timedelta(minutes=10),
@@ -154,6 +206,8 @@ def fetch_candle(smart, exch, token, candle_start, session_open=(9, 15)):
         "fromdate": frm.strftime("%Y-%m-%d %H:%M"),
         "todate": (candle_start + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M"),
     }
+    target = candle_start.replace(second=0, microsecond=0)
+
     for wait in (2, 4, 8):
         try:
             res = smart.getCandleData(params)
@@ -162,12 +216,55 @@ def fetch_candle(smart, exch, token, candle_start, session_open=(9, 15)):
             continue
         finally:
             time.sleep(CALL_DELAY)
-        if res and res.get("status") and res.get("data") is not None:
-            for ts, o, h, l, c, v in res["data"]:
-                if datetime.fromisoformat(ts).replace(tzinfo=None) == candle_start:
+
+        if not res or not res.get("status"):
+            time.sleep(wait)
+            continue
+
+        data = res.get("data")
+        if data is None:
+            time.sleep(wait)
+            continue
+
+        for row in data:
+            if isinstance(row, (list, tuple)) and len(row) >= 6:
+                ts, o, h, l, c, v = row[:6]
+                dt = _parse_candle_timestamp(ts)
+                if dt is not None and dt == target:
                     return dict(open=o, high=h, low=l, close=c, volume=v)
-            return None
+            elif isinstance(row, dict):
+                ts = row.get("time") or row.get("datetime") or row.get("timestamp") or row.get("ts")
+                dt = _parse_candle_timestamp(ts)
+                if dt is not None and dt == target:
+                    return {
+                        "open": row.get("open"),
+                        "high": row.get("high"),
+                        "low": row.get("low"),
+                        "close": row.get("close"),
+                        "volume": row.get("volume"),
+                    }
+
+        # Fallback: accept a candle whose timestamp falls within this 5-minute window
+        for row in data:
+            if isinstance(row, (list, tuple)) and len(row) >= 6:
+                ts, o, h, l, c, v = row[:6]
+                dt = _parse_candle_timestamp(ts)
+                if dt is not None and candle_start <= dt < candle_start + timedelta(minutes=5):
+                    return dict(open=o, high=h, low=l, close=c, volume=v)
+            elif isinstance(row, dict):
+                ts = row.get("time") or row.get("datetime") or row.get("timestamp") or row.get("ts")
+                dt = _parse_candle_timestamp(ts)
+                if dt is not None and candle_start <= dt < candle_start + timedelta(minutes=5):
+                    return {
+                        "open": row.get("open"),
+                        "high": row.get("high"),
+                        "low": row.get("low"),
+                        "close": row.get("close"),
+                        "volume": row.get("volume"),
+                    }
+
         time.sleep(wait)
+
     return None
 
 

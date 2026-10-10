@@ -175,26 +175,6 @@ def _parse_candle_timestamp(value):
     return dt.replace(second=0, microsecond=0)
 
 
-def _extract_candle_row(data):
-    """Return a candle row from SmartAPI response regardless of row layout."""
-    if not data:
-        return None
-    if isinstance(data, dict):
-        # Some responses may come back as dict->list or nested dict
-        for key in ("candle", "data", "rows"):
-            if key in data and data[key]:
-                return _extract_candle_row(data[key])
-        return None
-    if isinstance(data, list):
-        for row in data:
-            if isinstance(row, (list, tuple)) and len(row) >= 6:
-                return row
-            if isinstance(row, dict):
-                if any(k in row for k in ("time", "datetime", "timestamp", "ts")):
-                    return row
-    return None
-
-
 def fetch_candle(smart, exch, token, candle_start, session_open=(9, 15)):
     """Return dict of the 5-min candle starting at candle_start, else None."""
     frm = max(candle_start - timedelta(minutes=10),
@@ -244,7 +224,6 @@ def fetch_candle(smart, exch, token, candle_start, session_open=(9, 15)):
                         "volume": row.get("volume"),
                     }
 
-        # Fallback: accept a candle whose timestamp falls within this 5-minute window
         for row in data:
             if isinstance(row, (list, tuple)) and len(row) >= 6:
                 ts, o, h, l, c, v = row[:6]

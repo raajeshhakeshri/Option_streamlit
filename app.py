@@ -11,7 +11,7 @@ from SmartApi import SmartConnect
 # ============================ PAGE CONFIG ============================
 st.set_page_config(
     page_title="Option Candle & Pair Analyzer",
-    page_icon="馃搱",
+    page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -84,17 +84,16 @@ TOTP_SECRET = st.secrets["angel"]["TOTP_SECRET"]
 
 # ============================== CONFIG ===============================
 INDICES = {
-    "NIFTY": dict(label="Nifty 50", venue="NSE 路 NFO", opt_exch="NFO", step=50,
+    "NIFTY": dict(label="Nifty 50", venue="NSE / NFO", opt_exch="NFO", step=50,
                   hours=("09:15", "15:30"), session_open=(9, 15), default_strike=25000,
                   spot_exch="NSE", spot_token="99926000", spot_symbol="NIFTY"),
-    "SENSEX": dict(label="Sensex", venue="BSE 路 BFO", opt_exch="BFO", step=100,
+    "SENSEX": dict(label="Sensex", venue="BSE / BFO", opt_exch="BFO", step=100,
                    hours=("09:15", "15:30"), session_open=(9, 15), default_strike=82000,
                    spot_exch="BSE", spot_token="99919000", spot_symbol="SENSEX"),
-    # MCX crude oil options (underlying = crude futures, so no spot index)
-    "CRUDEOILM": dict(label="Crude Oil Mini", venue="MCX 路 10 bbl", opt_exch="MCX", step=50,
+    "CRUDEOILM": dict(label="Crude Oil Mini", venue="MCX / 10 bbl", opt_exch="MCX", step=50,
                       itype="OPTFUT", hours=("09:00", "23:50"), session_open=(9, 0),
                       default_strike=8000, strike_floor=1000),
-    "CRUDEOIL": dict(label="Crude Oil", venue="MCX 路 100 bbl", opt_exch="MCX", step=50,
+    "CRUDEOIL": dict(label="Crude Oil", venue="MCX / 100 bbl", opt_exch="MCX", step=50,
                      itype="OPTFUT", hours=("09:00", "23:50"), session_open=(9, 0),
                      default_strike=8000, strike_floor=1000),
 }
@@ -137,13 +136,10 @@ def load_option_map(index_name, expiry_selection):
     else:
         expiry = expiries[0]
 
-    df = df[df["expiry_d"] == expiry]
-    df["strike_f"] = df["strike"].astype(float) / 100.0
-    if cfg.get("strike_floor"):                       # some MCX rows are not scaled by 100
-        df["strike_f"] = df["strike_f"].where(df["strike_f"] >= cfg["strike_floor"],
-                                              df["strike"].astype(float))
+    df = df[df["expiry_d"] == expiry].copy()
+    df["strike_num"] = pd.to_numeric(df["strike"], errors="coerce").astype(float)
     df["otype"] = df["symbol"].str[-2:]
-    cmap = {(r.strike_f, r.otype): (r.token, r.symbol) for r in df.itertuples()}
+    cmap = {(int(r.strike_num), r.otype): (r.token, r.symbol) for r in df.itertuples()}
     return expiry, cmap
 
 
@@ -158,7 +154,7 @@ def fetch_candle(smart, exch, token, candle_start, session_open=(9, 15)):
         "fromdate": frm.strftime("%Y-%m-%d %H:%M"),
         "todate": (candle_start + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M"),
     }
-    for wait in (2, 4, 8):                            # retry with growing back-off
+    for wait in (2, 4, 8):
         try:
             res = smart.getCandleData(params)
         except Exception:
@@ -170,7 +166,7 @@ def fetch_candle(smart, exch, token, candle_start, session_open=(9, 15)):
             for ts, o, h, l, c, v in res["data"]:
                 if datetime.fromisoformat(ts).replace(tzinfo=None) == candle_start:
                     return dict(open=o, high=h, low=l, close=c, volume=v)
-            return None                               # no trade in that candle
+            return None
         time.sleep(wait)
     return None
 
@@ -191,8 +187,8 @@ def compute_pairs(df):
         c_vals = [c.open, c.high, c.low, c.close]
         for p in pe_df.itertuples(index=False):
             p_vals = [p.open, p.high, p.low, p.close]
-            ce_cnt = sum(c.low <= v <= c.high for v in p_vals)   # PE values inside CE range
-            pe_cnt = sum(p.low <= v <= p.high for v in c_vals)   # CE values inside PE range
+            ce_cnt = sum(c.low <= v <= c.high for v in p_vals)
+            pe_cnt = sum(p.low <= v <= p.high for v in c_vals)
             results.append(dict(
                 ce_strike=c.strike, pe_strike=p.strike,
                 ce_count=ce_cnt, pe_count=pe_cnt, total=ce_cnt + pe_cnt,
@@ -232,7 +228,7 @@ def pair_card(r):
         '<div class="pair"><div class="pair-top">'
         f'<span class="tag ce">CE {int(r.ce_strike)}</span><span class="tag pe">PE {int(r.pe_strike)}</span>'
         f'<span class="score">{int(r.total)}<small>/8</small></span></div>'
-        f'<div class="pair-sub">CE count {int(r.ce_count)} &nbsp;路&nbsp; PE count {int(r.pe_count)}</div>'
+        f'<div class="pair-sub">CE count {int(r.ce_count)} &nbsp;&middot;&nbsp; PE count {int(r.pe_count)}</div>'
         '<div class="pair-grid">'
         f'<div><span>Higher high</span><b>{r.higher_high:,.2f}</b></div>'
         f'<div><span>Lower low</span><b>{r.lower_low:,.2f}</b></div>'
@@ -275,7 +271,7 @@ def range_chart(df):
     d["strike"] = d["strike"].astype(int)
     return alt.Chart(d).mark_bar(size=14).encode(
         x=alt.X("strike:O", title="Strike"),
-        y=alt.Y("low:Q", title="Candle range (鈧?", scale=alt.Scale(zero=False)),
+        y=alt.Y("low:Q", title="Candle range", scale=alt.Scale(zero=False)),
         y2="high:Q",
         xOffset="type:N",
         color=alt.Color("type:N", title="Type",
@@ -290,19 +286,19 @@ st.markdown(
 <div class="hero">
   <div>
     <h1>Option Candle &amp; Pair Analyzer</h1>
-    <p>Angel One SmartAPI &nbsp;路&nbsp; Nifty 50 &nbsp;路&nbsp; Sensex &nbsp;路&nbsp; Crude Oil &nbsp;路&nbsp; Crude Oil Mini</p>
+    <p>Angel One SmartAPI &nbsp;/&nbsp; Nifty 50 &nbsp;/&nbsp; Sensex &nbsp;/&nbsp; Crude Oil &nbsp;/&nbsp; Crude Oil Mini</p>
   </div>
-  <div class="chip">5-MIN CANDLES 路 CE 脳 PE OVERLAP</div>
+  <div class="chip">5-MIN CANDLES / CE & PE OVERLAP</div>
 </div>
 """,
     unsafe_allow_html=True,
 )
 
 # ============================== SIDEBAR ==============================
-st.sidebar.markdown("### 鈿欙笍 Parameters")
+st.sidebar.markdown("### Parameters")
 index_name = st.sidebar.selectbox(
     "Market / Instrument", list(INDICES.keys()),
-    format_func=lambda k: f"{INDICES[k]['label']}  路  {INDICES[k]['venue']}")
+    format_func=lambda k: f"{INDICES[k]['label']}  /  {INDICES[k]['venue']}")
 cfg = INDICES[index_name]
 step = cfg["step"]
 
@@ -321,7 +317,7 @@ t_text = st.sidebar.selectbox("Candle start time", options=time_options,
                               index=0 if is_mcx else 1, key=f"time_{index_name}")
 _h, _m = map(int, t_text.split(":"))
 _end = datetime(2000, 1, 1, _h, _m) + timedelta(minutes=5)
-st.sidebar.caption(f"Candle window: {t_text} 鈥?{_end.strftime('%H:%M')}")
+st.sidebar.caption(f"Candle window: {t_text} to {_end.strftime('%H:%M')}")
 
 d_text = st.sidebar.date_input("Date", value=date.today(), max_value=date.today())
 centre = st.sidebar.number_input(f"Centre strike (multiple of {step})", min_value=0,
@@ -330,9 +326,9 @@ expiry_option = st.sidebar.radio("Expiry", ["Current", "Next"], horizontal=True)
 if is_mcx:
     st.sidebar.caption("Crude oil options expire monthly: Current = nearest expiry, Next = the one after.")
 min_total = st.sidebar.slider("Minimum total for a pair match", min_value=1, max_value=8, value=6)
-run_button = st.sidebar.button("鈻? Run lookup & analysis", type="primary")
+run_button = st.sidebar.button("Run lookup & analysis", type="primary")
 st.sidebar.markdown(
-    '<div class="small-note">Strikes covered: centre 鈭? to +3 (7 strikes 脳 CE/PE = 14 contracts).</div>',
+    '<div class="small-note">Strikes covered: centre +/- 3 (7 strikes x CE/PE = 14 contracts).</div>',
     unsafe_allow_html=True)
 
 # ============================ EXECUTION FLOW =========================
@@ -344,10 +340,10 @@ if run_button:
             candle_start = datetime.combine(d_text, datetime.min.time()).replace(hour=_h, minute=_m)
             with st.status("Connecting to Angel One", expanded=True) as status:
                 smart = login()
-                st.write("鉁?Logged in")
+                st.write("✅ Logged in")
                 status.update(label="Loading option contracts")
                 expiry, cmap = load_option_map(index_name, expiry_option)
-                st.write(f"鉁?{cfg['label']} expiry ({expiry_option}): **{expiry}**")
+                st.write(f"📌 {cfg['label']} expiry ({expiry_option}): **{expiry}**")
 
                 strikes = [centre + i * step for i in range(-N_AROUND, N_AROUND + 1)]
                 rows, total_steps, current_step = [], len(strikes) * 2, 0
@@ -390,7 +386,7 @@ if run_button:
 # ============================== RESULTS ==============================
 R = st.session_state.get("result")
 tab_match, tab_data, tab_matrix, tab_track = st.tabs(
-    ["馃幆  Matches", "馃搵  Candle data", "馃М  Pair matrix", "馃摗  Index tracker"])
+    ["✅ Matches", "📊 Candle data", "📈 Pair matrix", "📉 Index tracker"])
 
 if not R:
     for tab in (tab_match, tab_data, tab_matrix):
@@ -408,10 +404,10 @@ else:
     with tab_match:
         c1, c2, c3, c4, c5 = st.columns(5)
         c1.markdown(kpi("Market", R["label"], f"Expiry {R['expiry']} ({R['pick']})"), unsafe_allow_html=True)
-        c2.markdown(kpi("Candle", f"{R['start']}鈥搟R['end']}", R["day"].strftime("%d %b %Y")), unsafe_allow_html=True)
-        c3.markdown(kpi("Centre strike", f"{R['centre']:,}", f"鈭? 鈥?+3 路 step {R['step']}"), unsafe_allow_html=True)
+        c2.markdown(kpi("Candle", f"{R['start']} to {R['end']}", R["day"].strftime("%d %b %Y")), unsafe_allow_html=True)
+        c3.markdown(kpi("Centre strike", f"{R['centre']:,}", f"-3 to +3 / step {R['step']}"), unsafe_allow_html=True)
         c4.markdown(kpi("Candles received", f"{got}/{len(df)}", "CE + PE contracts"), unsafe_allow_html=True)
-        c5.markdown(kpi("Matched pairs", f"{len(matched)}", f"threshold 鈮?{min_total} 路 best {best}/8",
+        c5.markdown(kpi("Matched pairs", f"{len(matched)}", f"threshold >= {min_total} / best {best}/8",
                         "good" if len(matched) else "warn"), unsafe_allow_html=True)
 
         st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
@@ -422,13 +418,13 @@ else:
             st.markdown(
                 f'<div class="verdict miss"><div class="big">{best}</div><div class="txt">'
                 f'<b>No pair reached {min_total}</b><br><span>Best total found: {best} of 8 across '
-                f'{len(res)} CE 脳 PE pairs. Try lowering the threshold in the sidebar.</span></div></div>',
+                f'{len(res)} CE × PE pairs. Try lowering the threshold in the sidebar.</span></div></div>',
                 unsafe_allow_html=True)
         else:
             st.markdown(
                 f'<div class="verdict hit"><div class="big">{len(matched)}</div><div class="txt">'
                 f'<b>pair{"s" if len(matched) != 1 else ""} reached a total of {min_total} or more</b><br>'
-                f'<span>Highest total {best}/8 路 {len(res)} CE 脳 PE pairs compared</span></div></div>',
+                f'<span>Highest total {best}/8 / {len(res)} CE × PE pairs compared</span></div></div>',
                 unsafe_allow_html=True)
             st.markdown('<div class="section-title">Top matching pairs</div>', unsafe_allow_html=True)
             st.markdown('<div class="pairs">' + "".join(pair_card(r) for r in matched.head(12).itertuples())
@@ -437,7 +433,7 @@ else:
                 st.caption(f"Showing 12 of {len(matched)} pairs. See the Pair matrix tab for the full list.")
 
     with tab_data:
-        st.markdown('<div class="section-title">OHLC by strike 路 CE and PE side by side</div>',
+        st.markdown('<div class="section-title">OHLC by strike / CE and PE side by side</div>',
                     unsafe_allow_html=True)
         wide = wide_table(df)
 
@@ -445,8 +441,8 @@ else:
             on = row.name == R["centre"]
             return ["background-color: rgba(30,58,138,.12); font-weight: 600" if on else "" for _ in row]
 
-        show_df(wide.style.format("{:,.2f}", na_rep="鈥?).apply(hl, axis=1))
-        st.caption("Highlighted row = centre strike. 鈥溾€撯€?means no candle was returned for that contract.")
+        show_df(wide.style.format("{:,.2f}", na_rep="N/A").apply(hl, axis=1))
+        st.caption("Highlighted row = centre strike. N/A means no candle was returned for that contract.")
 
         st.markdown('<div class="section-title">Candle range by strike</div>', unsafe_allow_html=True)
         try:
@@ -456,7 +452,7 @@ else:
 
         with st.expander("Raw rows (symbols, volume)"):
             show_df(df, hide_index=True)
-        st.download_button("猬?Download candle data (CSV)", df.to_csv(index=False).encode(),
+        st.download_button("Download candle data (CSV)", df.to_csv(index=False).encode(),
                            file_name=f"candles_{R['index']}_{R['day']}_{R['start'].replace(':', '')}.csv",
                            mime="text/csv")
 
@@ -464,7 +460,7 @@ else:
         if res.empty:
             st.warning("No complete CE/PE candle data to compare.")
         else:
-            st.markdown('<div class="section-title">Total count per CE 脳 PE pair</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-title">Total count per CE × PE pair</div>', unsafe_allow_html=True)
             show_chart(heatmap(res, min_total))
             st.caption("Rows = CE strike, columns = PE strike. Each cell = CE count + PE count (max 8). "
                        "Green outline = reached your threshold.")
@@ -473,18 +469,18 @@ else:
                 "ce_strike": "CE strike", "pe_strike": "PE strike", "ce_count": "CE count",
                 "pe_count": "PE count", "total": "Total", "higher_high": "Higher high", "lower_low": "Lower low"})
             show_df(full, hide_index=True)
-            st.download_button("猬?Download all pairs (CSV)", full.to_csv(index=False).encode(),
+            st.download_button("Download all pairs (CSV)", full.to_csv(index=False).encode(),
                                file_name=f"pairs_{R['index']}_{R['day']}_{R['start'].replace(':', '')}.csv",
                                mime="text/csv")
 
 # ============================ INDEX TRACKER ==========================
 with tab_track:
-    st.markdown('<div class="section-title">Spot index 路 CMP and 9:15 open (selected date)</div>',
+    st.markdown('<div class="section-title">Spot index / CMP and 9:15 open (selected date)</div>',
                 unsafe_allow_html=True)
     st.caption("Available for Nifty 50 and Sensex. Crude oil options trade on futures, so they have no spot index.")
-    if st.button("馃攧  Get latest CMP & 9:15 open"):
+    if st.button("Get latest CMP & 9:15 open"):
         try:
-            with st.spinner("Fetching index data鈥?):
+            with st.spinner("Fetching index data"):
                 smart_temp = SmartConnect(api_key=API_KEY)
                 res_temp = smart_temp.generateSession(CLIENT_CODE, PIN, pyotp.TOTP(TOTP_SECRET).now())
                 if res_temp and res_temp.get("status"):
@@ -507,7 +503,7 @@ with tab_track:
                             candle_res = smart_temp.getCandleData(candle_params)
                             open_val = "N/A"
                             if candle_res and "data" in candle_res and candle_res["data"]:
-                                open_val = candle_res["data"][0][1]        # index 1 is open price
+                                open_val = candle_res["data"][0][1]
                             out[idx_key] = (cmp_val, open_val, selected_date_str)
                         except Exception as e_inner:
                             out[idx_key] = ("error", str(e_inner), selected_date_str)
@@ -529,9 +525,9 @@ with tab_track:
                 chg = f"{float(cmp_val) - float(open_val):+,.2f} vs open"
             except Exception:
                 pass
-            col.markdown(kpi(INDICES[k]["label"], f"{cmp_val}", f"9:15 open ({dstr}): {open_val} 路 {chg}"),
+            col.markdown(kpi(INDICES[k]["label"], f"{cmp_val}", f"9:15 open ({dstr}): {open_val} / {chg}"),
                          unsafe_allow_html=True)
 
 st.markdown("<div class='small-note' style='margin-top:30px;text-align:center'>"
-            "Data from Angel One SmartAPI 路 For analysis only, not investment advice.</div>",
+            "Data from Angel One SmartAPI / For analysis only, not investment advice.</div>",
             unsafe_allow_html=True)

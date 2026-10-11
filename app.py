@@ -10,7 +10,7 @@ from SmartApi import SmartConnect
 
 # ============================ PAGE CONFIG ============================
 st.set_page_config(
-    page_title="Option Candle & Pair Analyzer",
+    page_title="Option Pair Analyzer",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded",

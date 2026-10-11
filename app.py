@@ -12,7 +12,7 @@ from SmartApi import SmartConnect
 st.set_page_config(
     page_title="Option Pair Analyzer",
     page_icon="📈",
-    layout="wide",
+    layout="fit",
     initial_sidebar_state="expanded",
 )
 

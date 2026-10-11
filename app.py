@@ -104,6 +104,10 @@ INDICES = {
                      itype="OPTFUT", hours=("09:00", "23:50"), session_open=(9, 0),
                      default_strike=8000, strike_floor=1000),
 }
+# ADDED: India VIX for the Index tracker tab only (kept out of INDICES so the market dropdown is unchanged)
+VIX_CFG = dict(label="India VIX", spot_exch="NSE", spot_token="99926017", spot_symbol="India VIX")
+TRACKER_META = {**INDICES, "INDIAVIX": VIX_CFG}
+
 IST = timezone(timedelta(hours=5, minutes=30))
 
 
@@ -538,7 +542,7 @@ else:
 with tab_track:
     st.markdown('<div class="section-title">Spot index · CMP and 9:15 open (selected date)</div>',
                 unsafe_allow_html=True)
-    st.caption("Available for Nifty 50 and Sensex. Crude oil options trade on futures, so they have no spot index.")
+    st.caption("Shows Nifty 50, Sensex and India VIX: current value and the day's 9:15 open. Crude oil options trade on futures, so they have no spot index.")
     if st.button("🔄  Get latest CMP & 9:15 open"):
         try:
             with st.spinner("Fetching index data…"):
@@ -547,10 +551,11 @@ with tab_track:
                 if res_temp and res_temp.get("status"):
                     selected_date_str = d_text.strftime("%Y-%m-%d")
                     out = {}
-                    for idx_key, idx_cfg in INDICES.items():
+                    for idx_key, idx_cfg in TRACKER_META.items():          # CHANGED: INDICES -> TRACKER_META
                         if "spot_token" not in idx_cfg:
                             continue
                         try:
+                            time.sleep(CALL_DELAY)                              # ADDED: avoid Angel rate limit
                             ltp_res = smart_temp.ltpData(idx_cfg["spot_exch"], idx_cfg["spot_symbol"],
                                                          idx_cfg["spot_token"])
                             cmp_val = ltp_res["data"]["ltp"] if ltp_res and "data" in ltp_res else "N/A"
@@ -579,14 +584,14 @@ with tab_track:
         cols = st.columns(len(T))
         for col, (k, (cmp_val, open_val, dstr)) in zip(cols, T.items()):
             if cmp_val == "error":
-                col.error(f"{INDICES[k]['label']}: {open_val}")
+                col.error(f"{TRACKER_META[k]['label']}: {open_val}")
                 continue
             chg = ""
             try:
                 chg = f"{float(cmp_val) - float(open_val):+,.2f} vs open"
             except Exception:
                 pass
-            col.markdown(kpi(INDICES[k]["label"], f"{cmp_val}", f"9:15 open ({dstr}): {open_val} · {chg}"),
+            col.markdown(kpi(TRACKER_META[k]["label"], f"{cmp_val}", f"9:15 open ({dstr}): {open_val} · {chg}"),
                          unsafe_allow_html=True)
 
 st.markdown("<div class='small-note' style='margin-top:30px;text-align:center'>"

@@ -10,69 +10,15 @@ from SmartApi import SmartConnect
 
 # ============================ PAGE CONFIG ============================
 st.set_page_config(
-    page_title="Option Pair Analyzer",
+    page_title="Option Candle & Pair Analyzer",
     page_icon="📈",
-    layout="fit",
-    initial_sidebar_state="expanded",
+    layout="wide",
+    initial_sidebar_state="auto",
 )
 
 # ============================== STYLING ==============================
 st.markdown(
-    """
-<style>
-.block-container {padding-top: 1.3rem; padding-bottom: 3rem; max-width: 1400px;}
-#MainMenu, footer {visibility: hidden;}
-[data-testid="stSidebar"] {border-right: 1px solid rgba(128,128,128,.25);}
-[data-testid="stSidebar"] .stButton > button {width: 100%;}
-
-.hero {background: linear-gradient(120deg,#0b1f4d 0%,#1e3a8a 55%,#2563eb 100%); color:#fff;
-       border-radius: 18px; padding: 22px 28px; margin-bottom: 18px;
-       display:flex; justify-content:space-between; align-items:center; gap:16px;
-       box-shadow: 0 10px 28px rgba(15,32,77,.28);}
-.hero h1 {font-size: 1.6rem; margin: 0; padding: 0; color:#fff; font-weight: 700; letter-spacing:-.01em;}
-.hero p  {margin: 5px 0 0 0; color:#c7d6fe; font-size:.92rem;}
-.hero .chip {background: rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.28);
-             padding:6px 14px; border-radius:999px; font-size:.74rem; font-weight:600;
-             letter-spacing:.07em; white-space:nowrap;}
-
-.kpi {border:1px solid rgba(128,128,128,.28); background: rgba(128,128,128,.07);
-      border-radius:14px; padding:14px 16px; height:100%;}
-.kpi-l {font-size:.7rem; text-transform:uppercase; letter-spacing:.09em; opacity:.62; font-weight:600;}
-.kpi-v {font-size:1.45rem; font-weight:700; margin-top:3px; line-height:1.15;}
-.kpi-s {font-size:.78rem; opacity:.6; margin-top:3px;}
-.kpi.good {border-color: rgba(22,163,74,.55); background: rgba(22,163,74,.09);}
-.kpi.warn {border-color: rgba(217,119,6,.55); background: rgba(217,119,6,.09);}
-
-.verdict {border-radius:14px; padding:16px 20px; margin: 4px 0 16px 0; display:flex; gap:16px; align-items:center;}
-.verdict.hit  {background: rgba(22,163,74,.10); border:1px solid rgba(22,163,74,.5);}
-.verdict.miss {background: rgba(217,119,6,.10); border:1px solid rgba(217,119,6,.5);}
-.verdict .big {font-size:2rem; font-weight:800; line-height:1;}
-.verdict .txt b {font-size:1rem;}
-.verdict .txt span {opacity:.7; font-size:.86rem;}
-
-.pairs {display:grid; grid-template-columns: repeat(auto-fill,minmax(290px,1fr)); gap:14px;}
-.pair {border:1px solid rgba(128,128,128,.3); background: rgba(128,128,128,.06);
-       border-radius:16px; padding:16px; border-left:5px solid #16a34a;}
-.pair-top {display:flex; align-items:center; gap:8px;}
-.tag {font-weight:700; font-size:.8rem; padding:4px 10px; border-radius:999px;}
-.tag.ce {color:#15803d; background: rgba(22,163,74,.14);}
-.tag.pe {color:#be185d; background: rgba(219,39,119,.14);}
-.score {margin-left:auto; font-size:1.6rem; font-weight:800; color:#15803d;}
-.score small {font-size:.8rem; opacity:.6; font-weight:600;}
-.pair-sub {font-size:.8rem; opacity:.65; margin:8px 0 10px 0;}
-.pair-grid {display:grid; grid-template-columns:1fr 1fr; gap:10px;}
-.pair-grid div {border:1px solid rgba(128,128,128,.25); border-radius:12px; padding:9px 12px; background: rgba(128,128,128,.05);}
-.pair-grid span {display:block; font-size:.66rem; text-transform:uppercase; letter-spacing:.08em; opacity:.6;}
-.pair-grid b {font-size:1.12rem;}
-
-.welcome {border:1px dashed rgba(128,128,128,.45); border-radius:16px; padding:34px 30px; text-align:center; margin-top:8px;}
-.welcome h3 {margin:0 0 8px 0;}
-.welcome p {opacity:.7; margin:0;}
-.section-title {font-size:.78rem; text-transform:uppercase; letter-spacing:.1em; opacity:.6; font-weight:700; margin: 18px 0 8px 0;}
-.stTabs [data-baseweb="tab"] {font-weight:600; padding: 10px 18px;}
-.small-note {font-size:.78rem; opacity:.6;}
-</style>
-""",
+    """ <style> .block-container {padding-top: 1.3rem; padding-bottom: 3rem; max-width: 1400px;} #MainMenu, footer {visibility: hidden;} [data-testid="stSidebar"] {border-right: 1px solid rgba(128,128,128,.25);} [data-testid="stSidebar"] .stButton > button {width: 100%;} .hero {background: linear-gradient(120deg,#0b1f4d 0%,#1e3a8a 55%,#2563eb 100%); color:#fff; border-radius: 18px; padding: 22px 28px; margin-bottom: 18px; display:flex; justify-content:space-between; align-items:center; gap:16px; box-shadow: 0 10px 28px rgba(15,32,77,.28);} .hero h1 {font-size: 1.6rem; margin: 0; padding: 0; color:#fff; font-weight: 700; letter-spacing:-.01em;} .hero p {margin: 5px 0 0 0; color:#c7d6fe; font-size:.92rem;} .hero .chip {background: rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.28); padding:6px 14px; border-radius:999px; font-size:.74rem; font-weight:600; letter-spacing:.07em; white-space:nowrap;} .kpi {border:1px solid rgba(128,128,128,.28); background: rgba(128,128,128,.07); border-radius:14px; padding:14px 16px; height:100%;} .kpi-l {font-size:.7rem; text-transform:uppercase; letter-spacing:.09em; opacity:.62; font-weight:600;} .kpi-v {font-size:1.45rem; font-weight:700; margin-top:3px; line-height:1.15;} .kpi-s {font-size:.78rem; opacity:.6; margin-top:3px;} .kpi.good {border-color: rgba(22,163,74,.55); background: rgba(22,163,74,.09);} .kpi.warn {border-color: rgba(217,119,6,.55); background: rgba(217,119,6,.09);} .verdict {border-radius:14px; padding:16px 20px; margin: 4px 0 16px 0; display:flex; gap:16px; align-items:center;} .verdict.hit {background: rgba(22,163,74,.10); border:1px solid rgba(22,163,74,.5);} .verdict.miss {background: rgba(217,119,6,.10); border:1px solid rgba(217,119,6,.5);} .verdict .big {font-size:2rem; font-weight:800; line-height:1;} .verdict .txt b {font-size:1rem;} .verdict .txt span {opacity:.7; font-size:.86rem;} .pairs {display:grid; grid-template-columns: repeat(auto-fill,minmax(min(290px,100%),1fr)); gap:14px;} .pair {border:1px solid rgba(128,128,128,.3); background: rgba(128,128,128,.06); border-radius:16px; padding:16px; border-left:5px solid #16a34a;} .pair-top {display:flex; align-items:center; gap:8px;} .tag {font-weight:700; font-size:.8rem; padding:4px 10px; border-radius:999px;} .tag.ce {color:#15803d; background: rgba(22,163,74,.14);} .tag.pe {color:#be185d; background: rgba(219,39,119,.14);} .score {margin-left:auto; font-size:1.6rem; font-weight:800; color:#15803d;} .score small {font-size:.8rem; opacity:.6; font-weight:600;} .pair-sub {font-size:.8rem; opacity:.65; margin:8px 0 10px 0;} .pair-grid {display:grid; grid-template-columns:1fr 1fr; gap:10px;} .pair-grid div {border:1px solid rgba(128,128,128,.25); border-radius:12px; padding:9px 12px; background: rgba(128,128,128,.05);} .pair-grid span {display:block; font-size:.66rem; text-transform:uppercase; letter-spacing:.08em; opacity:.6;} .pair-grid b {font-size:1.12rem;} .welcome {border:1px dashed rgba(128,128,128,.45); border-radius:16px; padding:34px 30px; text-align:center; margin-top:8px;} .welcome h3 {margin:0 0 8px 0;} .welcome p {opacity:.7; margin:0;} .section-title {font-size:.78rem; text-transform:uppercase; letter-spacing:.1em; opacity:.6; font-weight:700; margin: 18px 0 8px 0;} .stTabs [data-baseweb="tab"] {font-weight:600; padding: 10px 18px;} .small-note {font-size:.78rem; opacity:.6;} .only-mobile {display:none; margin-top:10px !important;} /* ===================== RESPONSIVE LAYOUT (phone / tablet / desktop) ===================== */ .hero {flex-wrap: wrap;} .hero > div:first-child {flex: 1 1 280px; min-width: 0;} .hero h1 {font-size: clamp(1.2rem, 1rem + 1.2vw, 1.6rem);} .hero p {overflow-wrap: anywhere;} .kpi-v {font-size: clamp(1.1rem, .9rem + .9vw, 1.45rem); overflow-wrap: anywhere;} .kpi {margin-bottom: 1rem;} /* offsets Streamlit's negative markdown margin so wrapped card rows do not touch */ .block-container [data-testid="stHorizontalBlock"] {flex-wrap: wrap !important; row-gap: .75rem !important; column-gap: .75rem !important;} .block-container [data-testid="stHorizontalBlock"] > [data-testid="stColumn"], .block-container [data-testid="stHorizontalBlock"] > [data-testid="column"] {min-width: 0 !important;} [data-testid="stSidebar"] [data-testid="stElementContainer"], [data-testid="stSidebar"] [data-testid="stButton"], [data-testid="stSidebar"] [data-testid="stButton"] > button, [data-testid="stSidebar"] .stButton > button {width: 100% !important;} [data-testid="stDataFrame"] {max-width: 100%;} @media (max-width: 1000px) { /* tablet: 3 cards per row */ .block-container {padding-top: 4rem !important;} /* clear the fixed top bar / sidebar arrow */ .block-container [data-testid="stHorizontalBlock"] > [data-testid="stColumn"], .block-container [data-testid="stHorizontalBlock"] > [data-testid="column"] { flex: 1 1 calc(33.333% - .75rem) !important; width: calc(33.333% - .75rem) !important;} } @media (max-width: 768px) { /* phone / small tablet */ .block-container {padding: 4rem .75rem 3rem .75rem !important;} .hero {padding: 16px; border-radius: 14px; gap: 10px;} .hero p {font-size: .82rem;} .hero .chip {font-size: .62rem; padding: 4px 10px; white-space: normal;} .stTabs [data-baseweb="tab"] {padding: 8px 7px; font-size: .78rem;} .only-mobile {display:block;} .verdict {padding: 12px 14px; gap: 12px;} .verdict .big {font-size: 1.6rem;} .pair {padding: 13px;} .score {font-size: 1.35rem;} .pair-grid b {font-size: 1rem;} .kpi {padding: 12px 13px;} } @media (max-width: 640px) { /* phone: 2 cards per row */ .block-container [data-testid="stHorizontalBlock"] > [data-testid="stColumn"], .block-container [data-testid="stHorizontalBlock"] > [data-testid="column"] { flex: 1 1 calc(50% - .5rem) !important; width: calc(50% - .5rem) !important;} } @media (max-width: 340px) { /* very small phones: 1 per row */ .block-container [data-testid="stHorizontalBlock"] > [data-testid="stColumn"], .block-container [data-testid="stHorizontalBlock"] > [data-testid="column"] { flex: 1 1 100% !important; width: 100% !important;} } </style> """,
     unsafe_allow_html=True,
 )
 
@@ -200,12 +146,7 @@ def fetch_candle(smart, exch, token, candle_start, session_open=(9, 15)):
 
 
 def compute_pairs(df):
-    """
-    Compare EVERY CE strike with EVERY PE strike in df (same candle).
-     ce_count = number of PE {O,H,L,C} lying inside [CE low, CE high]
-     pe_count = number of CE {O,H,L,C} lying inside [PE low, PE high]
-     total    = ce_count + pe_count   (max 8)
-    """
+    """ Compare EVERY CE strike with EVERY PE strike in df (same candle). ce_count = number of PE {O,H,L,C} lying inside [CE low, CE high] pe_count = number of CE {O,H,L,C} lying inside [PE low, PE high] total = ce_count + pe_count (max 8) """
     cols = ["open", "high", "low", "close"]
     ce_df = df[df["type"] == "CE"].dropna(subset=cols)
     pe_df = df[df["type"] == "PE"].dropna(subset=cols)
@@ -307,7 +248,8 @@ def heatmap(res, min_total):
         y=alt.Y("ce_strike:O", title="CE strike"),
     )
     rect = base.mark_rect().encode(
-        color=alt.Color("total:Q", scale=alt.Scale(scheme="blues", domain=[0, 8]), title="Total"),
+        color=alt.Color("total:Q", scale=alt.Scale(scheme="blues", domain=[0, 8]), title="Total",
+                        legend=alt.Legend(orient="bottom", direction="horizontal", gradientLength=180)),
         tooltip=[alt.Tooltip("ce_strike:O", title="CE strike"), alt.Tooltip("pe_strike:O", title="PE strike"),
                  alt.Tooltip("ce_count:Q", title="CE count"), alt.Tooltip("pe_count:Q", title="PE count"),
                  alt.Tooltip("total:Q", title="Total"),
@@ -333,7 +275,7 @@ def range_chart(df):
         y=alt.Y("low:Q", title="Candle range (₹)", scale=alt.Scale(zero=False)),
         y2="high:Q",
         xOffset="type:N",
-        color=alt.Color("type:N", title="Type",
+        color=alt.Color("type:N", title="Type", legend=alt.Legend(orient="bottom", direction="horizontal"),
                         scale=alt.Scale(domain=["CE", "PE"], range=["#16a34a", "#db2777"])),
         tooltip=["type:N", "strike:O", "open:Q", "high:Q", "low:Q", "close:Q"],
     ).properties(height=320)
@@ -341,15 +283,7 @@ def range_chart(df):
 
 # =============================== HEADER ==============================
 st.markdown(
-    """
-<div class="hero">
-  <div>
-    <h1>Option Candle &amp; Pair Analyzer</h1>
-    <p>Angel One SmartAPI &nbsp;·&nbsp; Nifty 50 &nbsp;·&nbsp; Sensex &nbsp;·&nbsp; Crude Oil &nbsp;·&nbsp; Crude Oil Mini</p>
-  </div>
-  <div class="chip">5-MIN CANDLES · CE × PE OVERLAP</div>
-</div>
-""",
+    """ <div class="hero"> <div> <h1>Option Candle &amp; Pair Analyzer</h1> <p>Angel One SmartAPI &nbsp;·&nbsp; Nifty 50 &nbsp;·&nbsp; Sensex &nbsp;·&nbsp; Crude Oil &nbsp;·&nbsp; Crude Oil Mini</p> </div> <div class="chip">5-MIN CANDLES · CE × PE OVERLAP</div> </div> """,
     unsafe_allow_html=True,
 )
 
@@ -357,7 +291,7 @@ st.markdown(
 st.sidebar.markdown("### ⚙️ Parameters")
 index_name = st.sidebar.selectbox(
     "Market / Instrument", list(INDICES.keys()),
-    format_func=lambda k: f"{INDICES[k]['label']}  ·  {INDICES[k]['venue']}")
+    format_func=lambda k: f"{INDICES[k]['label']} · {INDICES[k]['venue']}")
 cfg = INDICES[index_name]
 step = cfg["step"]
 
@@ -385,7 +319,7 @@ expiry_option = st.sidebar.radio("Expiry", ["Current", "Next"], horizontal=True)
 if is_mcx:
     st.sidebar.caption("Crude oil options expire monthly: Current = nearest expiry, Next = the one after.")
 min_total = st.sidebar.slider("Minimum total for a pair match", min_value=1, max_value=8, value=6)
-run_button = st.sidebar.button("▶  Run lookup & analysis", type="primary")
+run_button = st.sidebar.button("▶ Run lookup & analysis", type="primary")
 st.sidebar.markdown(
     '<div class="small-note">Strikes covered: centre −3 to +3 (7 strikes × CE/PE = 14 contracts).</div>',
     unsafe_allow_html=True)
@@ -417,7 +351,7 @@ if run_button:
                             bar.progress(current_step / total_steps)
                             continue
                         token, symbol = info
-                        status.update(label=f"Fetching {symbol}  ({current_step}/{total_steps})")
+                        status.update(label=f"Fetching {symbol} ({current_step}/{total_steps})")
                         c = fetch_candle(smart, cfg["opt_exch"], token, candle_start, cfg["session_open"])
                         rows.append(dict(
                             candle_time=candle_start.strftime("%Y-%m-%d %H:%M"),
@@ -447,7 +381,7 @@ if run_button:
 # ============================== RESULTS ==============================
 R = st.session_state.get("result")
 tab_match, tab_data, tab_matrix, tab_track = st.tabs(
-    ["🎯  Matches", "📋  Candle data", "🧮  Pair matrix", "📡  Index tracker"])
+    ["🎯 Matches", "📋 Candle data", "🧮 Pair matrix", "📡 Index tracker"])
 
 if not R:
     for tab in (tab_match, tab_data, tab_matrix):
@@ -455,7 +389,8 @@ if not R:
             st.markdown(
                 '<div class="welcome"><h3>Ready when you are</h3>'
                 '<p>Pick a market, candle time and centre strike in the sidebar, then click '
-                '<b>Run lookup &amp; analysis</b>.</p></div>', unsafe_allow_html=True)
+                '<b>Run lookup &amp; analysis</b>.</p>'
+                '<p class="only-mobile">On a phone, tap the <b>»</b> arrow at the top-left to open the sidebar.</p></div>', unsafe_allow_html=True)
 else:
     df, res = R["df"], R["res"]
     matched = matches_of(res, min_total)
@@ -539,11 +474,16 @@ else:
                                mime="text/csv")
 
 # ============================ INDEX TRACKER ==========================
-with tab_track:
+# The tracker refreshes on its own so clicking its button does not jump back to the first tab.
+_fragment = getattr(st, "fragment", None) or getattr(st, "experimental_fragment", None) or (lambda f: f)
+
+
+@_fragment
+def _tracker_panel():
     st.markdown('<div class="section-title">Spot index · CMP and 9:15 open (selected date)</div>',
                 unsafe_allow_html=True)
     st.caption("Shows Nifty 50, Sensex and India VIX: current value and the day's 9:15 open. Crude oil options trade on futures, so they have no spot index.")
-    if st.button("🔄  Get latest CMP & 9:15 open"):
+    if st.button("🔄 Get latest CMP & 9:15 open"):
         try:
             with st.spinner("Fetching index data…"):
                 smart_temp = SmartConnect(api_key=API_KEY)
@@ -593,6 +533,9 @@ with tab_track:
                 pass
             col.markdown(kpi(TRACKER_META[k]["label"], f"{cmp_val}", f"9:15 open ({dstr}): {open_val} · {chg}"),
                          unsafe_allow_html=True)
+
+with tab_track:
+    _tracker_panel()
 
 st.markdown("<div class='small-note' style='margin-top:30px;text-align:center'>"
             "Data from Angel One SmartAPI · For analysis only, not investment advice.</div>",
